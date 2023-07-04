@@ -1,4 +1,6 @@
+import 'package:flutter/cupertino.dart';
 import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:permission_handler/permission_handler.dart';
 
 void main() {
@@ -27,25 +29,32 @@ class Home extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Center(
-      child: TextButton(
-        onPressed: () {
-          checkPermission(Permission.location, context);
-        },
-        child: const Text("Check for permission "),
+        child: Center(
+      child: Column(
+        children: [
+          TextButton(
+            onPressed: () {
+              checkPermission(Permission.storage, context);
+            },
+            child: const Text("Check for permission "),
+          ),
+          ElevatedButton(
+              onPressed: () {
+                getImageFromGallery(Permission.photos, context);
+              },
+              child: const Text("Choose an Image"))
+        ],
       ),
-    );
+    ));
   }
 
   Future<void> checkPermission(
       Permission permission, BuildContext context) async {
     final status = await permission.request();
 
-    /// NOT Granted
+    // NOT Granted
     if (!status.isGranted) {
-      // var status = await Permission.location.request();
-      // print('Permission.location.request() status is $status');
-      var status = await Permission.locationWhenInUse.request();
-      print('Permission.locationWhenInUse.request() status is $status');
+      debugPrint('Permission status is $status');
       if (status.isGranted) {
         ScaffoldMessenger.of(context).showSnackBar(
           const SnackBar(
@@ -61,7 +70,7 @@ class Home extends StatelessWidget {
       }
     }
 
-    /// Granted
+    // Granted
     else {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(
@@ -70,4 +79,44 @@ class Home extends StatelessWidget {
       );
     }
   }
+
+  void getImageFromGallery(Permission permission, BuildContext context) async {
+    try {
+      XFile? pickImage = await ImagePicker().pickImage(
+          source: ImageSource.gallery, maxHeight: 1800, maxWidth: 1800);
+    } catch (err) {
+      var status = await permission.request();
+      if (status.isDenied) {
+        debugPrint("Access denied");
+        // ScaffoldMessenger.of(context).showSnackBar(
+        //   const SnackBar(
+        //     content: Text("Permission Denied"),
+        //   ),
+        // );
+        showDialogBox(context);
+        debugPrint("Error ${err.toString()}");
+      } else {
+        print("From the else statement exception happen");
+      }
+    }
+  }
 }
+
+showDialogBox(context) => showCupertinoDialog<void>(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) => CupertinoAlertDialog(
+        title: const Text("Permission Denied"),
+        content: const Text("Allow access to gallery and photos"),
+        actions: <CupertinoDialogAction>[
+          CupertinoDialogAction(
+            onPressed: () => Navigator.of(context).pop(),
+            child: const Text("Cancel"),
+          ),
+          const CupertinoDialogAction(
+              isDefaultAction: true,
+              onPressed: openAppSettings,
+              child: Text("Settings"))
+        ],
+      ),
+    );
